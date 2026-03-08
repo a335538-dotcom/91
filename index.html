@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRAIN / 極化訓練系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg1: #111111;
+  --bg2: #181818;
+  --bg3: #222222;
+  --line: #2a2a2a;
+  --line2: #333333;
+  --txt: #ffffff;
+  --txt2: #aaaaaa;
+  --txt3: #555555;
+  --red: #ff3b3b;
+  --green: #00e676;
+  --yellow: #ffd600;
+  --blue: #2979ff;
+  --purple: #d500f9;
+  --mono: 'Space Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body: 'Noto Sans TC', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--body);
+  font-weight: 700;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SCANLINE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.012) 2px,
+    rgba(255,255,255,0.012) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── HERO ── */
+.hero {
+  padding: 48px 20px 36px;
+  border-bottom: 1px solid var(--line2);
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+.hero-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.4;
+}
+.hero-accent {
+  position: absolute;
+  top: -40px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(255,59,59,0.12) 0%, transparent 70%);
+}
+.hero-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--red);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 16px; height: 1px;
+  background: var(--red);
+}
+
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(56px, 14vw, 96px);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  color: var(--txt);
+  margin-bottom: 8px;
+}
+.hero-title .accent-red { color: var(--red); }
+
+.hero-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--txt3);
+  letter-spacing: 0.1em;
+  margin-bottom: 28px;
+  text-transform: uppercase;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line2);
+  border: 1px solid var(--line2);
+}
+.stat {
+  background: var(--bg);
+  padding: 16px 12px;
+  text-align: center;
+}
+.stat-num {
+  font-family: var(--display);
+  font-size: 36px;
+  line-height: 1;
+  color: var(--txt);
+  letter-spacing: 0.05em;
+}
+.stat-unit { font-size: 16px; }
+.stat-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── TABS ── */
+.nav-wrap {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.nav-tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex-shrink: 0;
+  padding: 14px 16px 12px;
+  border: none;
+  background: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--txt3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--txt2); }
+.tab-btn.active {
+  color: var(--txt);
+  border-bottom-color: var(--red);
+}
+
+/* ── CONTENT ── */
+.content {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 100px;
+}
+.section { display: none; }
+.section.active {
+  display: block;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SECTION HEADER ── */
+.sec-head {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line2);
+}
+.sec-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--red);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.sec-title {
+  font-family: var(--display);
+  font-size: clamp(36px, 8vw, 52px);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--txt);
+}
+.sec-desc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+  letter-spacing: 0.08em;
+  margin-top: 6px;
+}
+
+/* ── BLOCK ── */
+.block {
+  border: 1px solid var(--line2);
+  margin-bottom: 16px;
+  background: var(--bg1);
+}
+.block-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+}
+.block-head-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--txt2);
+}
+.block-head-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 3px 8px;
+  letter-spacing: 0.1em;
+}
+.badge-green { background: var(--green); color: #000; }
+.badge-red   { background: var(--red);   color: #fff; }
+.badge-yellow{ background: var(--yellow);color: #000; }
+.badge-dim   { background: var(--bg3); color: var(--txt3); border: 1px solid var(--line2); }
+
+.block-body { padding: 16px; }
+
+/* ── HIGHLIGHT BOX ── */
+.hbox {
+  border-left: 3px solid var(--red);
+  padding: 12px 14px;
+  background: rgba(255,59,59,0.05);
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--txt2);
+}
+.hbox strong { color: var(--txt); }
+
+/* ── PRINCIPLE GRID ── */
+.principle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line2);
+  border: 1px solid var(--line2);
+  margin-bottom: 16px;
+}
+.principle-item {
+  background: var(--bg1);
+  padding: 16px 14px;
+}
+.p-icon { font-size: 18px; margin-bottom: 8px; }
+.p-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.p-val {
+  font-family: var(--display);
+  font-size: 22px;
+  color: var(--txt);
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+.p-old {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  text-decoration: line-through;
+  margin-top: 4px;
+}
+
+/* ── WEEK ROWS ── */
+.week-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.week-row:last-child { border-bottom: none; }
+.day-tag {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  width: 32px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.day-tag.red    { color: var(--red); }
+.day-tag.green  { color: var(--green); }
+.day-tag.blue   { color: var(--blue); }
+.day-tag.dim    { color: var(--txt3); }
+.day-content { flex: 1; }
+.day-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--txt);
+  margin-bottom: 2px;
+}
+.day-desc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+  letter-spacing: 0.05em;
+}
+.day-dur {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+.day-int {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.int-pip {
+  width: 4px; height: 16px;
+  background: var(--bg3);
+}
+.int-pip.on-red { background: var(--red); }
+.int-pip.on-grn { background: var(--green); }
+.int-pip.on-blu { background: var(--blue); }
+
+/* ── EX TABLE ── */
+.ex-list { }
+.ex-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px 80px;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.ex-row:last-child { border-bottom: none; }
+.ex-row-head {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px 80px;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line2);
+  background: var(--bg2);
+}
+.col-hd {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--txt3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.ex-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--txt);
+  line-height: 1.3;
+}
+.ex-key {
+  display: inline-block;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 8px;
+  padding: 1px 4px;
+  letter-spacing: 0.1em;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.ex-have {
+  display: inline-block;
+  background: var(--green);
+  color: #000;
+  font-family: var(--mono);
+  font-size: 8px;
+  padding: 1px 4px;
+  letter-spacing: 0.1em;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.ex-note {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  margin-top: 3px;
+  letter-spacing: 0.05em;
+}
+.ex-sets {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--txt2);
+  line-height: 1.6;
+}
+.ex-sets .warm { color: var(--yellow); font-size: 9px; display: block; }
+.ex-sets .hard { color: var(--txt); }
+.ex-reps {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--txt2);
+}
+.ex-wt {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green);
+}
+.ex-wt.have { color: var(--purple); }
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border-top: 1px solid var(--line2);
+}
+.total-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.total-val {
+  font-family: var(--display);
+  font-size: 24px;
+  color: var(--green);
+  letter-spacing: 0.05em;
+}
+
+/* ── PROGRESS ── */
+.prog-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.prog-item:last-child { border-bottom: none; }
+.prog-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.prog-name { font-size: 13px; font-weight: 900; color: var(--txt); }
+.prog-vals {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+}
+.prog-track {
+  height: 2px;
+  background: var(--bg3);
+  position: relative;
+}
+.prog-fill {
+  height: 100%;
+  background: var(--red);
+  position: relative;
+  transition: width 1s cubic-bezier(0.16,1,0.3,1);
+}
+.prog-fill::after {
+  content: '';
+  position: absolute;
+  right: -3px; top: -3px;
+  width: 8px; height: 8px;
+  background: var(--red);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--red);
+}
+
+/* ── DP STEPS ── */
+.dp-step {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.dp-step:last-child { border-bottom: none; }
+.dp-num {
+  font-family: var(--display);
+  font-size: 36px;
+  color: var(--line2);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: right;
+  letter-spacing: -0.02em;
+  transition: color 0.2s;
+}
+.dp-step:hover .dp-num { color: var(--red); }
+.dp-body {}
+.dp-title { font-size: 14px; font-weight: 900; color: var(--txt); margin-bottom: 4px; }
+.dp-desc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+}
+.dp-code {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  background: rgba(0,230,118,0.06);
+  border: 1px solid rgba(0,230,118,0.15);
+  padding: 7px 10px;
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+/* ── CYCLE ── */
+.cycle-block {
+  border: 1px solid var(--line2);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.cycle-head {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: var(--bg2);
+  transition: background 0.15s;
+}
+.cycle-head:hover { background: var(--bg3); }
+.cycle-head-left {}
+.cycle-week {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.cycle-name { font-size: 15px; font-weight: 900; color: var(--txt); }
+.cycle-arrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--txt3);
+  transition: transform 0.2s;
+}
+.cycle-block.open .cycle-arrow { transform: rotate(90deg); }
+.cycle-body {
+  display: none;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+.cycle-block.open .cycle-body { display: block; }
+.cycle-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.cycle-bullet {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt2);
+  line-height: 1.4;
+}
+.cycle-bullet:last-child { border-bottom: none; }
+.cycle-bullet::before {
+  content: '—';
+  font-family: var(--mono);
+  color: var(--txt3);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.c-red   .cycle-week { color: var(--red); }
+.c-green .cycle-week { color: var(--green); }
+.c-yellow .cycle-week { color: var(--yellow); }
+.c-orange .cycle-week { color: #ff9100; }
+.c-red   .cycle-head { border-left: 3px solid var(--red); }
+.c-green .cycle-head { border-left: 3px solid var(--green); }
+.c-yellow .cycle-head { border-left: 3px solid var(--yellow); }
+.c-orange .cycle-head { border-left: 3px solid #ff9100; }
+
+/* ── NUTRITION ── */
+.macro-visual {
+  display: flex;
+  height: 4px;
+  background: var(--bg3);
+  margin-bottom: 20px;
+  gap: 2px;
+}
+.mv-seg { height: 100%; transition: width 0.8s ease; }
+
+.macro-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  gap: 12px;
+}
+.macro-row:last-child { border-bottom: none; }
+.macro-color { width: 2px; height: 32px; flex-shrink: 0; }
+.macro-info { flex: 1; }
+.macro-name { font-size: 13px; font-weight: 900; color: var(--txt); }
+.macro-src { font-family: var(--mono); font-size: 9px; color: var(--txt3); letter-spacing: 0.05em; margin-top: 2px; }
+.macro-num {
+  font-family: var(--display);
+  font-size: 28px;
+  color: var(--txt);
+  letter-spacing: 0.05em;
+  text-align: right;
+}
+.macro-unit { font-size: 14px; }
+
+.timing-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-start;
+}
+.timing-item:last-child { border-bottom: none; }
+.timing-time {
+  font-family: var(--display);
+  font-size: 15px;
+  color: var(--yellow);
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  width: 70px;
+  line-height: 1.2;
+}
+.timing-info {}
+.timing-name { font-size: 13px; font-weight: 900; color: var(--txt); margin-bottom: 4px; }
+.timing-desc { font-family: var(--mono); font-size: 10px; color: var(--txt3); line-height: 1.6; letter-spacing: 0.03em; }
+
+/* ── LOG ── */
+.log-header {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 80px;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line2);
+}
+.log-hd { font-family: var(--mono); font-size: 8px; color: var(--txt3); letter-spacing: 0.15em; text-transform: uppercase; }
+.log-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 1fr 80px;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.log-row:nth-child(even) { background: rgba(255,255,255,0.015); }
+.log-date { font-family: var(--mono); font-size: 10px; color: var(--yellow); font-weight: 700; letter-spacing: 0.05em; }
+.log-cell { font-family: var(--mono); font-size: 10px; color: var(--txt2); line-height: 1.5; letter-spacing: 0.03em; }
+.log-note { font-family: var(--mono); font-size: 10px; color: var(--txt3); font-style: italic; }
+
+.input-group { margin-bottom: 12px; }
+.input-lbl { font-family: var(--mono); font-size: 9px; color: var(--txt3); letter-spacing: 0.15em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.inp {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.inp:focus { border-color: var(--red); }
+.inp::placeholder { color: var(--txt3); }
+
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.btn-add {
+  width: 100%;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  padding: 14px;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 4px;
+}
+.btn-add:hover { background: #ff6060; }
+.btn-add:active { transform: scale(0.99); }
+
+/* ── BOTTOM NAV ── */
+.bottom-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(10,10,10,0.97);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line2);
+  z-index: 200;
+}
+.bottom-nav {
+  display: flex;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.bot-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-top: 2px solid transparent;
+  transition: border-color 0.15s;
+}
+.bot-btn.active { border-top-color: var(--red); }
+.bot-btn .b-icon { font-size: 16px; }
+.bot-btn .b-lbl { font-family: var(--mono); font-size: 8px; color: var(--txt3); letter-spacing: 0.1em; text-transform: uppercase; }
+.bot-btn.active .b-lbl { color: var(--red); }
+
+/* ── TICKER ── */
+.ticker {
+  border-top: 1px solid var(--line2);
+  border-bottom: 1px solid var(--line2);
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 8px 0;
+  margin-bottom: 0;
+  background: var(--bg1);
+}
+.ticker-inner {
+  display: inline-block;
+  animation: ticker 20s linear infinite;
+}
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-text {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0 32px;
+}
+.ticker-text span { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-accent"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">女性極化訓練系統 / 2025.04–2025.10</div>
+    <div class="hero-title">POLAR<br>TRAIN<span class="accent-red">.</span></div>
+    <div class="hero-subtitle">整合精實肌肉訓練 × 月經週期動態調整</div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">7<span class="stat-unit">mo</span></div>
+        <div class="stat-lbl">訓練期程</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">3<span class="stat-unit">×</span></div>
+        <div class="stat-lbl">每週重訓</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">-8<span class="stat-unit">%</span></div>
+        <div class="stat-lbl">體脂目標</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker">
+  <span class="ticker-inner">
+    <span class="ticker-text">雙重漸進 <span>→</span> 後側鏈優先 <span>→</span> 極化策略 <span>→</span> 月經週期調整 <span>→</span> 90秒休息 <span>→</span> 6-8次紮實組 <span>→</span> 絕對不空腹 <span>→</span></span>
+    <span class="ticker-text">雙重漸進 <span>→</span> 後側鏈優先 <span>→</span> 極化策略 <span>→</span> 月經週期調整 <span>→</span> 90秒休息 <span>→</span> 6-8次紮實組 <span>→</span> 絕對不空腹 <span>→</span></span>
+  </span>
+</div>
+
+<!-- NAV -->
+<div class="nav-wrap">
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="show('overview')">OVERVIEW</button>
+    <button class="tab-btn" onclick="show('train1')">TRAIN-01</button>
+    <button class="tab-btn" onclick="show('train2')">TRAIN-02</button>
+    <button class="tab-btn" onclick="show('train3')">TRAIN-03</button>
+    <button class="tab-btn" onclick="show('cycle')">CYCLE</button>
+    <button class="tab-btn" onclick="show('nutrition')">FUEL</button>
+    <button class="tab-btn" onclick="show('log')">LOG</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- OVERVIEW -->
+  <div id="overview" class="section active">
+    <div class="sec-head">
+      <div class="sec-label">Section 01 / Overview</div>
+      <div class="sec-title">計劃總覽</div>
+      <div class="sec-desc">科學化原則整合 / 女性生理設計 / 動態週期</div>
+    </div>
+
+    <div class="hbox">
+      放棄中等強度有氧，採取「<strong>極化訓練</strong>」策略。高強度日夠操、低強度日夠輕。搭配強化<strong>後側鏈</strong>，保護Q-angle，打造緊實體態。
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">核心原則差異</span>
+        <span class="block-head-badge badge-dim">vs 原版</span>
+      </div>
+      <div class="principle-grid">
+        <div class="principle-item">
+          <div class="p-icon">⚡</div>
+          <div class="p-name">每組次數</div>
+          <div class="p-val">6–8</div>
+          <div class="p-old">舊：8–10次</div>
+        </div>
+        <div class="principle-item">
+          <div class="p-icon">⏱</div>
+          <div class="p-name">組間休息</div>
+          <div class="p-val">90s</div>
+          <div class="p-old">舊：2–4分鐘</div>
+        </div>
+        <div class="principle-item">
+          <div class="p-icon">🦵</div>
+          <div class="p-name">後側鏈</div>
+          <div class="p-val">極強化</div>
+          <div class="p-old">女性ACL保護</div>
+        </div>
+        <div class="principle-item">
+          <div class="p-icon">📈</div>
+          <div class="p-name">進度系統</div>
+          <div class="p-val">雙重漸進</div>
+          <div class="p-old">次數→重量→循環</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">每週安排</span>
+        <span class="block-head-badge badge-dim">7 DAYS</span>
+      </div>
+      <div class="week-row">
+        <div class="day-tag red">一</div>
+        <div class="day-content">
+          <div class="day-name">訓練一｜下肢後側鏈</div>
+          <div class="day-desc">臀推 · 羅馬尼亞硬舉 · 深蹲 · 外展</div>
+          <div class="day-dur">50–60 min</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip on-red"></div><div class="int-pip on-red"></div><div class="int-pip on-red"></div>
+        </div>
+      </div>
+      <div class="week-row">
+        <div class="day-tag green">二</div>
+        <div class="day-content">
+          <div class="day-name">主動恢復</div>
+          <div class="day-desc">散步 · 瑜伽 · 伸展</div>
+          <div class="day-dur">30–45 min</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip on-grn"></div><div class="int-pip"></div><div class="int-pip"></div>
+        </div>
+      </div>
+      <div class="week-row">
+        <div class="day-tag red">三</div>
+        <div class="day-content">
+          <div class="day-name">訓練二｜上肢推拉</div>
+          <div class="day-desc">臥推 · 下拉 · 肩推 · 划船</div>
+          <div class="day-dur">50–60 min</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip on-red"></div><div class="int-pip on-red"></div><div class="int-pip on-red"></div>
+        </div>
+      </div>
+      <div class="week-row">
+        <div class="day-tag blue">四</div>
+        <div class="day-content">
+          <div class="day-name">HIIT 間歇</div>
+          <div class="day-desc">40s衝 / 20s休 × 15輪</div>
+          <div class="day-dur">20–25 min</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip on-blu"></div><div class="int-pip on-blu"></div><div class="int-pip on-blu"></div>
+        </div>
+      </div>
+      <div class="week-row">
+        <div class="day-tag green">五</div>
+        <div class="day-content">
+          <div class="day-name">主動恢復</div>
+          <div class="day-desc">快走 · 輕鬆有氧</div>
+          <div class="day-dur">30 min</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip on-grn"></div><div class="int-pip"></div><div class="int-pip"></div>
+        </div>
+      </div>
+      <div class="week-row">
+        <div class="day-tag red">六</div>
+        <div class="day-content">
+          <div class="day-name">訓練三｜下肢股四頭+拉</div>
+          <div class="day-desc">深蹲 · 硬舉 · 分腿蹲 · 划船</div>
+          <div class="day-dur">50–60 min</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip on-red"></div><div class="int-pip on-red"></div><div class="int-pip on-red"></div>
+        </div>
+      </div>
+      <div class="week-row">
+        <div class="day-tag dim">日</div>
+        <div class="day-content">
+          <div class="day-name">完全休息</div>
+          <div class="day-desc">睡眠優先 · 放鬆</div>
+        </div>
+        <div class="day-int">
+          <div class="int-pip"></div><div class="int-pip"></div><div class="int-pip"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">雙重漸進系統</span>
+        <span class="block-head-badge badge-green">CORE METHOD</span>
+      </div>
+      <div class="block-body">
+        <div class="dp-step">
+          <div class="dp-num">01</div>
+          <div class="dp-body">
+            <div class="dp-title">選定起始重量，做最低次數</div>
+            <div class="dp-desc">選一個做 6次×3組 感覺有點挑戰的重量</div>
+            <div class="dp-code">RDL 40kg × 6reps × 3sets</div>
+          </div>
+        </div>
+        <div class="dp-step">
+          <div class="dp-num">02</div>
+          <div class="dp-body">
+            <div class="dp-title">每次訓練嘗試多做1次</div>
+            <div class="dp-desc">同重量，次數從6→7→8慢慢升</div>
+            <div class="dp-code">40kg × 7 → 40kg × 8</div>
+          </div>
+        </div>
+        <div class="dp-step">
+          <div class="dp-num">03</div>
+          <div class="dp-body">
+            <div class="dp-title">3組都達到8次→加重</div>
+            <div class="dp-desc">全部達到上限後，下次加 2.5kg</div>
+            <div class="dp-code">40kg × 8 × 3sets ✓ → LOAD UP</div>
+          </div>
+        </div>
+        <div class="dp-step">
+          <div class="dp-num">04</div>
+          <div class="dp-body">
+            <div class="dp-title">加重後次數降回，重新循環</div>
+            <div class="dp-desc">加重後暫時做不滿，從6次重新累積</div>
+            <div class="dp-code">42.5kg × 6 × 3sets → new cycle</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAIN 1 -->
+  <div id="train1" class="section">
+    <div class="sec-head">
+      <div class="sec-label">Section 02 / Train-01</div>
+      <div class="sec-title">下肢後側鏈</div>
+      <div class="sec-desc">週一 / 50–60min / 後側鏈主導</div>
+    </div>
+
+    <div class="hbox">
+      女性 Q-angle 較大，<strong>後側鏈強化</strong>可平衡股四頭過度主導，有效保護前十字韌帶。
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">訓練動作</span>
+        <span class="block-head-badge badge-red">5 MOVES</span>
+      </div>
+      <div class="ex-row-head">
+        <div class="col-hd">動作</div>
+        <div class="col-hd">組數</div>
+        <div class="col-hd">次數</div>
+        <div class="col-hd">重量</div>
+      </div>
+      <div class="ex-list">
+        <div class="ex-row">
+          <div><div class="ex-name">槓鈴深蹲<span class="ex-key">CORE</span></div><div class="ex-note">動作品質優先</div></div>
+          <div class="ex-sets"><span class="warm">暖身×2</span><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt">20→50kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">臀推</div><div class="ex-note">頂部縮緊 2秒</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt">20→60kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">羅馬尼亞硬舉<span class="ex-key">CORE</span><span class="ex-have">✓ 40kg</span></div><div class="ex-note">髖關節主導</div></div>
+          <div class="ex-sets"><span class="warm">暖身×1</span><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt have">40→60kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">單腳RDL</div><div class="ex-note">ACL保護關鍵動作</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">8/腳</div>
+          <div class="ex-wt">10→20kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">腿部外展<span class="ex-have">✓ 35kg</span></div><div class="ex-note">臀中肌孤立</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">10–12</div>
+          <div class="ex-wt have">35→50kg</div>
+        </div>
+      </div>
+      <div class="total-row">
+        <span class="total-lbl">總紮實組數</span>
+        <span class="total-val">15 SETS ✓</span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">3月進步目標</span>
+        <span class="block-head-badge badge-yellow">MARCH</span>
+      </div>
+      <div class="block-body">
+        <div class="prog-item">
+          <div class="prog-head"><span class="prog-name">壺鈴深蹲</span><span class="prog-vals">8kg×8 → 8kg×10</span></div>
+          <div class="prog-track"><div class="prog-fill" style="width:60%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-head"><span class="prog-name">羅馬尼亞硬舉</span><span class="prog-vals">40kg → 45kg</span></div>
+          <div class="prog-track"><div class="prog-fill" style="width:75%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-head"><span class="prog-name">保加利亞分腿蹲</span><span class="prog-vals">5kg → 7.5kg</span></div>
+          <div class="prog-track"><div class="prog-fill" style="width:40%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAIN 2 -->
+  <div id="train2" class="section">
+    <div class="sec-head">
+      <div class="sec-label">Section 03 / Train-02</div>
+      <div class="sec-title">上肢推拉</div>
+      <div class="sec-desc">週三 / 50–60min / 胸背肩臂均衡</div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">訓練動作</span>
+        <span class="block-head-badge badge-red">5 MOVES</span>
+      </div>
+      <div class="ex-row-head">
+        <div class="col-hd">動作</div>
+        <div class="col-hd">組數</div>
+        <div class="col-hd">次數</div>
+        <div class="col-hd">重量</div>
+      </div>
+      <div class="ex-list">
+        <div class="ex-row">
+          <div><div class="ex-name">上斜啞鈴臥推<span class="ex-key">CORE</span></div><div class="ex-note">從5kg升級！雙手各持</div></div>
+          <div class="ex-sets"><span class="warm">暖身×1</span><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt">7.5→15kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">滑輪下拉<span class="ex-have">✓ 20kg</span></div><div class="ex-note">寬距，背部完全收縮</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt have">20→40kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">坐姿啞鈴肩推</div><div class="ex-note">前/中束均衡</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt">7.5→15kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">單臂啞鈴划船</div><div class="ex-note">全幅度收縮</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">8/邊</div>
+          <div class="ex-wt">10→20kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">啞鈴側平舉</div><div class="ex-note">控制離心慢降</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">10–12</div>
+          <div class="ex-wt">5→10kg</div>
+        </div>
+      </div>
+      <div class="total-row">
+        <span class="total-lbl">總紮實組數</span>
+        <span class="total-val">15 SETS ✓</span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">3月進步目標</span>
+        <span class="block-head-badge badge-yellow">MARCH</span>
+      </div>
+      <div class="block-body">
+        <div class="prog-item">
+          <div class="prog-head"><span class="prog-name">上斜臥推</span><span class="prog-vals">5kg → 10kg（最重要！）</span></div>
+          <div class="prog-track"><div class="prog-fill" style="width:35%"></div></div>
+        </div>
+        <div class="prog-item">
+          <div class="prog-head"><span class="prog-name">滑輪下拉</span><span class="prog-vals">20kg → 25kg</span></div>
+          <div class="prog-track"><div class="prog-fill" style="width:70%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAIN 3 -->
+  <div id="train3" class="section">
+    <div class="sec-head">
+      <div class="sec-label">Section 04 / Train-03</div>
+      <div class="sec-title">下肢股四頭+拉</div>
+      <div class="sec-desc">週六 / 50–60min / 股四頭+背部</div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">訓練動作</span>
+        <span class="block-head-badge badge-red">5 MOVES</span>
+      </div>
+      <div class="ex-row-head">
+        <div class="col-hd">動作</div>
+        <div class="col-hd">組數</div>
+        <div class="col-hd">次數</div>
+        <div class="col-hd">重量</div>
+      </div>
+      <div class="ex-list">
+        <div class="ex-row">
+          <div><div class="ex-name">槓鈴深蹲<span class="ex-key">CORE</span></div><div class="ex-note">與訓練一互相進步</div></div>
+          <div class="ex-sets"><span class="warm">暖身×2</span><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt">同Train-01</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">保加利亞分腿蹲<span class="ex-have">✓ 5kg</span></div><div class="ex-note">你已有此動作</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">8/腳</div>
+          <div class="ex-wt have">5→15kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">槓鈴硬舉<span class="ex-key">CORE</span></div><div class="ex-note">全身最重要動作之一</div></div>
+          <div class="ex-sets"><span class="warm">暖身×2</span><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt">30→60kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">俯身划船<span class="ex-have">✓ 20kg</span></div><div class="ex-note">槓鈴，你已有基礎</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">6–8</div>
+          <div class="ex-wt have">20→40kg</div>
+        </div>
+        <div class="ex-row">
+          <div><div class="ex-name">腿部內收<span class="ex-have">✓ 14kg</span></div><div class="ex-note">機器，內收肌孤立</div></div>
+          <div class="ex-sets"><span class="hard">紮實×3</span></div>
+          <div class="ex-reps">10–12</div>
+          <div class="ex-wt have">14→25kg</div>
+        </div>
+      </div>
+      <div class="total-row">
+        <span class="total-lbl">總紮實組數</span>
+        <span class="total-val">15 SETS ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CYCLE -->
+  <div id="cycle" class="section">
+    <div class="sec-head">
+      <div class="sec-label">Section 05 / Cycle</div>
+      <div class="sec-title">月經週期</div>
+      <div class="sec-desc">女性身體是週期系統 / 動態調整強度</div>
+    </div>
+
+    <div class="hbox">
+      點擊每個週期查看詳細訓練建議。<strong>濾泡期是全力衝刺的最佳時機</strong>，黃體期則需要主動降強度。
+    </div>
+
+    <div class="cycle-block c-red" onclick="toggleCycle(this)">
+      <div class="cycle-head">
+        <div class="cycle-head-left">
+          <div class="cycle-week">第1週 / 約 Day 1–5</div>
+          <div class="cycle-name">🔴 月經期</div>
+        </div>
+        <div class="cycle-arrow">›</div>
+      </div>
+      <div class="cycle-body">
+        <div class="cycle-status">雌激素低 / 容易疲勞疼痛 / 身體在修復</div>
+        <div class="cycle-bullet">暫停高強度訓練</div>
+        <div class="cycle-bullet">改為瑜伽、散步、簡單伸展或滾筒放鬆</div>
+        <div class="cycle-bullet">經痛劇烈請直接休息，不強迫自己動</div>
+      </div>
+    </div>
+
+    <div class="cycle-block c-green open" onclick="toggleCycle(this)">
+      <div class="cycle-head">
+        <div class="cycle-head-left">
+          <div class="cycle-week">第2週 / 約 Day 6–13</div>
+          <div class="cycle-name">🟢 濾泡期 — 全力衝！</div>
+        </div>
+        <div class="cycle-arrow">›</div>
+      </div>
+      <div class="cycle-body">
+        <div class="cycle-status">雌激素上升 / 體力耐力情緒達巔峰 / 最佳訓練時機</div>
+        <div class="cycle-bullet">增加訓練量與強度的最佳時機！</div>
+        <div class="cycle-bullet">全力執行大重量訓練（5–8RM）</div>
+        <div class="cycle-bullet">適合挑戰個人最佳成績（PR）</div>
+        <div class="cycle-bullet">加入高強度間歇訓練</div>
+      </div>
+    </div>
+
+    <div class="cycle-block c-yellow" onclick="toggleCycle(this)">
+      <div class="cycle-head">
+        <div class="cycle-head-left">
+          <div class="cycle-week">第3週 / 約 Day 14±2</div>
+          <div class="cycle-name">🟡 排卵期 — 穩定輸出</div>
+        </div>
+        <div class="cycle-arrow">›</div>
+      </div>
+      <div class="cycle-body">
+        <div class="cycle-status">雌激素高峰 / 韌帶暫時鬆弛 / 受傷風險提高</div>
+        <div class="cycle-bullet">絕對不要挑戰1RM（個人最佳）</div>
+        <div class="cycle-bullet">移除課表中的高衝擊跳躍動作</div>
+        <div class="cycle-bullet">嚴格執行暖身，動作控制要精準</div>
+        <div class="cycle-bullet">感疲憊或排卵痛→立刻降為中等強度</div>
+      </div>
+    </div>
+
+    <div class="cycle-block c-orange" onclick="toggleCycle(this)">
+      <div class="cycle-head">
+        <div class="cycle-head-left">
+          <div class="cycle-week">第4週 / 約 Day 15–28</div>
+          <div class="cycle-name">🟠 黃體期 — 動態評估</div>
+        </div>
+        <div class="cycle-arrow">›</div>
+      </div>
+      <div class="cycle-body">
+        <div class="cycle-status">體溫升高 / 疲勞感增加 / 可能有經前症候群</div>
+        <div class="cycle-bullet">執行「10分鐘原則」：暖身10分鐘若無改善立刻降強度</div>
+        <div class="cycle-bullet">月經快來前幾天→主動設為減量週</div>
+        <div class="cycle-bullet">大幅降低訓練量與重量</div>
+        <div class="cycle-bullet">睡眠優先，不強迫自己</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUTRITION -->
+  <div id="nutrition" class="section">
+    <div class="sec-head">
+      <div class="sec-label">Section 06 / Fuel</div>
+      <div class="sec-title">營養策略</div>
+      <div class="sec-desc">高強度課表必須搭配正確的能量訊號</div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">每日巨量營養素</span>
+        <span class="block-head-badge badge-dim">1500 kcal</span>
+      </div>
+      <div class="block-body">
+        <div class="macro-visual">
+          <div class="mv-seg" style="width:35%; background:#d500f9;"></div>
+          <div class="mv-seg" style="width:40%; background:#00e676;"></div>
+          <div class="mv-seg" style="width:25%; background:#ffd600;"></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-color" style="background:#d500f9;"></div>
+          <div class="macro-info">
+            <div class="macro-name">蛋白質</div>
+            <div class="macro-src">雞胸肉 · 雞蛋 · 豆腐 · 乳清蛋白</div>
+          </div>
+          <div class="macro-num">130<span class="macro-unit">g</span></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-color" style="background:#00e676;"></div>
+          <div class="macro-info">
+            <div class="macro-name">碳水化合物</div>
+            <div class="macro-src">糙米 · 地瓜 · 燕麥 · 蔬菜</div>
+          </div>
+          <div class="macro-num">150<span class="macro-unit">g</span></div>
+        </div>
+        <div class="macro-row">
+          <div class="macro-color" style="background:#ffd600;"></div>
+          <div class="macro-info">
+            <div class="macro-name">脂肪</div>
+            <div class="macro-src">酪梨 · 堅果 · 橄欖油</div>
+          </div>
+          <div class="macro-num">42<span class="macro-unit">g</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">訓練時機策略</span>
+        <span class="block-head-badge badge-yellow">TIMING</span>
+      </div>
+      <div class="block-body">
+        <div class="timing-item">
+          <div class="timing-time">PRE<br>30–90m</div>
+          <div class="timing-info">
+            <div class="timing-name">訓練前 — 絕對不空腹</div>
+            <div class="timing-desc">碳水 + 蛋白質，告訴身體「能量充足」<br>香蕉1根 + 希臘優格 / 燕麥50g + 乳清1份</div>
+          </div>
+        </div>
+        <div class="timing-item">
+          <div class="timing-time">POST<br>45–60m</div>
+          <div class="timing-info">
+            <div class="timing-name">訓練後 — 把握恢復窗口</div>
+            <div class="timing-desc">蛋白質 ≥35g + 碳水 16.5g（55kg×0.3）<br>雞胸150g + 糙米半碗 / 乳清 + 地瓜100g</div>
+          </div>
+        </div>
+        <div class="timing-item">
+          <div class="timing-time">BED<br>可選</div>
+          <div class="timing-info">
+            <div class="timing-name">睡前 — 慢消化蛋白</div>
+            <div class="timing-desc">修復肌肉用<br>茅屋起司100g / 希臘優格 + 堅果</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><span class="block-head-title">每日飲食範例</span></div>
+      <div class="block-body" style="padding:0;">
+        <div class="week-row" style="padding:14px 16px;">
+          <div class="day-tag" style="color:var(--yellow); font-size:14px; width:auto;">07:00</div>
+          <div class="day-content">
+            <div class="day-name">早餐</div>
+            <div class="day-desc">燕麥50g + 雞蛋2顆 + 希臘優格100g</div>
+            <div class="day-dur">≈ 450 kcal</div>
+          </div>
+        </div>
+        <div class="week-row" style="padding:14px 16px;">
+          <div class="day-tag" style="color:var(--yellow); font-size:14px; width:auto;">12:00</div>
+          <div class="day-content">
+            <div class="day-name">午餐</div>
+            <div class="day-desc">糙米100g + 雞胸肉150g + 大量蔬菜</div>
+            <div class="day-dur">≈ 450 kcal</div>
+          </div>
+        </div>
+        <div class="week-row" style="padding:14px 16px;">
+          <div class="day-tag" style="color:var(--yellow); font-size:14px; width:auto;">15:00</div>
+          <div class="day-content">
+            <div class="day-name">下午點心</div>
+            <div class="day-desc">蛋白粉1勺 + 低脂牛奶250ml</div>
+            <div class="day-dur">≈ 180 kcal</div>
+          </div>
+        </div>
+        <div class="week-row" style="padding:14px 16px;">
+          <div class="day-tag" style="color:var(--yellow); font-size:14px; width:auto;">19:00</div>
+          <div class="day-content">
+            <div class="day-name">晚餐</div>
+            <div class="day-desc">鮭魚120g + 地瓜80g + 沙拉</div>
+            <div class="day-dur">≈ 400 kcal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div id="log" class="section">
+    <div class="sec-head">
+      <div class="sec-label">Section 07 / Log</div>
+      <div class="sec-title">訓練日誌</div>
+      <div class="sec-desc">記錄格式：重量 × 組數 × 次數</div>
+    </div>
+
+    <div class="block">
+      <div class="block-head">
+        <span class="block-head-title">近期紀錄</span>
+        <span class="block-head-badge badge-dim" id="logCount">5 ENTRIES</span>
+      </div>
+      <div class="log-header">
+        <div class="log-hd">日期</div>
+        <div class="log-hd">深蹲/下肢</div>
+        <div class="log-hd">硬舉/背部</div>
+        <div class="log-hd">感受</div>
+      </div>
+      <div id="logBody">
+        <div class="log-row">
+          <div class="log-date">3/6 四</div>
+          <div class="log-cell">壺8×3×8<br>分腿5×3×8</div>
+          <div class="log-cell">—</div>
+          <div class="log-note">第一天！✅</div>
+        </div>
+        <div class="log-row">
+          <div class="log-date">2/18 三</div>
+          <div class="log-cell">分腿5×3×8</div>
+          <div class="log-cell">划船20×3×8<br>上斜5×1×8</div>
+          <div class="log-note">640kg</div>
+        </div>
+        <div class="log-row">
+          <div class="log-date">2/13 五</div>
+          <div class="log-cell">—</div>
+          <div class="log-cell">RDL40×4×6-8<br>外展35×4×12</div>
+          <div class="log-note">3448kg 💪</div>
+        </div>
+        <div class="log-row">
+          <div class="log-date">1/24 六</div>
+          <div class="log-cell">空槓×3×8</div>
+          <div class="log-cell">RDL40×3×6-8<br>下拉20×3×10</div>
+          <div class="log-note">久沒深蹲</div>
+        </div>
+        <div class="log-row">
+          <div class="log-date">1/16 五</div>
+          <div class="log-cell">—</div>
+          <div class="log-cell">RDL30-40×5×8<br>外展35×4×12</div>
+          <div class="log-note">3830kg 最高</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><span class="block-head-title">新增訓練</span></div>
+      <div class="block-body">
+        <div class="input-group">
+          <label class="input-lbl">日期</label>
+          <input id="iDate" class="inp" placeholder="例：3/10 週一">
+        </div>
+        <div class="input-grid">
+          <div class="input-group">
+            <label class="input-lbl">深蹲 / 下肢</label>
+            <input id="iLeg" class="inp" placeholder="kg×組×次">
+          </div>
+          <div class="input-group">
+            <label class="input-lbl">硬舉 / 背部</label>
+            <input id="iPull" class="inp" placeholder="kg×組×次">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-lbl">感受 / 備注</label>
+          <input id="iNote" class="inp" placeholder="今天狀態如何？">
+        </div>
+        <button class="btn-add" onclick="addLog()">+ ADD TRAINING LOG</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-bar">
+  <div class="bottom-nav">
+    <button class="bot-btn active" onclick="show('overview')"><span class="b-icon">◈</span><span class="b-lbl">OVER</span></button>
+    <button class="bot-btn" onclick="show('train1')"><span class="b-icon">①</span><span class="b-lbl">T-01</span></button>
+    <button class="bot-btn" onclick="show('train2')"><span class="b-icon">②</span><span class="b-lbl">T-02</span></button>
+    <button class="bot-btn" onclick="show('train3')"><span class="b-icon">③</span><span class="b-lbl">T-03</span></button>
+    <button class="bot-btn" onclick="show('cycle')"><span class="b-icon">◎</span><span class="b-lbl">CYCLE</span></button>
+    <button class="bot-btn" onclick="show('nutrition')"><span class="b-icon">◆</span><span class="b-lbl">FUEL</span></button>
+    <button class="bot-btn" onclick="show('log')"><span class="b-icon">▣</span><span class="b-lbl">LOG</span></button>
+  </div>
+</div>
+
+<script>
+const sections = ['overview','train1','train2','train3','cycle','nutrition','log'];
+
+function show(id) {
+  sections.forEach((s, i) => {
+    const sec = document.getElementById(s);
+    const tabs = document.querySelectorAll('.tab-btn');
+    const bots = document.querySelectorAll('.bot-btn');
+    sec.classList.toggle('active', s === id);
+    tabs[i]?.classList.toggle('active', s === id);
+    bots[i]?.classList.toggle('active', s === id);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleCycle(el) {
+  el.classList.toggle('open');
+}
+
+function addLog() {
+  const date = document.getElementById('iDate').value.trim();
+  const leg  = document.getElementById('iLeg').value.trim();
+  const pull = document.getElementById('iPull').value.trim();
+  const note = document.getElementById('iNote').value.trim();
+  if (!date) { alert('請輸入日期'); return; }
+
+  const body = document.getElementById('logBody');
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.style.borderLeft = '2px solid #ff3b3b';
+  row.innerHTML = `
+    <div class="log-date">${date}</div>
+    <div class="log-cell">${leg || '—'}</div>
+    <div class="log-cell">${pull || '—'}</div>
+    <div class="log-note">${note || '—'}</div>
+  `;
+  body.insertBefore(row, body.firstChild);
+
+  // Update count
+  const count = body.querySelectorAll('.log-row').length;
+  document.getElementById('logCount').textContent = count + ' ENTRIES';
+
+  ['iDate','iLeg','iPull','iNote'].forEach(id => document.getElementById(id).value = '');
+
+  setTimeout(() => row.style.borderLeft = '', 2000);
+}
+
+// Animate progress bars on section show
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.prog-fill').forEach(bar => {
+        const w = bar.style.width;
+        bar.style.width = '0';
+        setTimeout(() => bar.style.width = w, 100);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
