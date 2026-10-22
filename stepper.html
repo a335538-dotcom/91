@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>衡好選 / 健檢預約</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f2f7f6;
+  --card: #ffffff;
+  --brand: #1bbf9c;
+  --brand-txt: #15967b;
+  --txt: #191a19;
+  --txt2: #424242;
+  --txt3: #6b6b6b;
+  --txt4: #474847;
+  --dot-off: #dbdbdb;
+  --chevron: #adadad;
+  --spin-track: #e8e8e8;
+  --shadow: 0 4px 20px rgba(0,151,119,0.15);
+  --body: 'Noto Sans TC', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: #333333;
+  font-family: var(--body);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.header {
+  height: 64px;
+  flex: 0 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.brand-name { font-size: 17px; font-weight: 700; color: var(--txt); }
+.brand-en { font-size: 10px; color: var(--txt4); }
+.location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ── STEPPER ── */
+.stepper {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+.stepper[hidden] { display: none; }
+.steps { display: flex; align-items: flex-start; gap: 20px; list-style: none; }
+.step { display: flex; align-items: flex-start; gap: 20px; }
+.step-body { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.step-label { font-size: 15px; font-weight: 400; color: var(--txt3); }
+.step.current .step-label { font-weight: 700; color: var(--txt); }
+
+.dots { display: flex; gap: 6px; }
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--dot-off);
+}
+.dot.on { background: var(--brand); }
+
+/* mobile-only compact stepper */
+.stepper-m {
+  display: none;
+  height: 36px;
+  padding: 0 16px;
+  align-items: center;
+  gap: 12px;
+}
+.stepper-m-name { font-size: 15px; font-weight: 700; color: var(--txt); }
+.stepper-m-name.login { font-size: 14px; font-weight: 500; color: var(--txt4); }
+.stepper-m .dots { gap: 5px; }
+
+/* ── PAGE ── */
+.page {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 32px;
+  gap: 4px;
+  text-align: center;
+}
+.page-title { font-size: 22px; font-weight: 700; color: var(--txt); letter-spacing: 0.4px; }
+.page-sub { font-size: 16px; color: var(--txt2); }
+.page-card {
+  width: 100%;
+  max-width: 800px;
+  min-height: 360px;
+  margin-top: 20px;
+  background: var(--card);
+  border-radius: 32px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  font-size: 15px;
+  color: #737373;
+}
+.loading { display: flex; flex-direction: column; align-items: center; gap: 16px; color: #575757; }
+.spinner {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 4px solid var(--spin-track);
+  border-top-color: var(--brand);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── ACTIONS ── */
+.actions {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  background: var(--card);
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.actions[hidden] { display: none; }
+.btn {
+  width: 360px;
+  height: 48px;
+  border-radius: 24px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-ghost { border: 1px solid var(--brand); background: var(--card); color: var(--brand-txt); }
+.btn-primary { border: 0; background: var(--brand); color: #ffffff; }
+.btn:focus-visible { outline: 2px solid var(--brand-txt); outline-offset: 2px; }
+
+/* ── MOBILE ── */
+@media (max-width: 640px) {
+  .header { height: 52px; padding: 0 16px; }
+  .brand { gap: 8px; }
+  .brand-mark { width: 26px; height: 26px; }
+  .brand-name { font-size: 15px; }
+  .brand-en { display: none; }
+  .location { font-size: 13px; gap: 3px; }
+  .stepper { display: none; }
+  .stepper-m { display: flex; }
+  .stepper-m[hidden] { display: none; }
+  .page { padding-top: 16px; gap: 6px; }
+  .page-title { font-size: 20px; letter-spacing: 0; }
+  .page-sub { font-size: 15px; }
+  .page-card { border-radius: 24px; padding: 24px; font-size: 14px; }
+  .spinner { width: 36px; height: 36px; }
+  .btn { width: auto; flex: 1 1 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"></div>
+    <div>
+      <div class="brand-name">國泰健康管理</div>
+      <div class="brand-en">Cathay Healthcare Management</div>
+    </div>
+  </div>
+  <div class="location">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 14.5s5-4.6 5-8.3A5 5 0 0 0 3 6.2c0 3.7 5 8.3 5 8.3z" stroke="#15967b" stroke-width="1.6"/><circle cx="8" cy="6.3" r="1.7" stroke="#15967b" stroke-width="1.6"/></svg>
+    敦南中心
+  </div>
+</header>
+
+<nav class="stepper" id="stepper" aria-label="預約進度">
+  <ol class="steps" id="steps"></ol>
+</nav>
+<div class="stepper-m" id="stepperM">
+  <div class="stepper-m-name" id="stepperMName"></div>
+  <div class="dots" id="stepperMDots" role="img"></div>
+</div>
+
+<main class="page">
+  <h1 class="page-title" id="pageTitle"></h1>
+  <p class="page-sub" id="pageSub"></p>
+  <div class="page-card" id="pageCard"></div>
+</main>
+
+<div class="actions" id="actions">
+  <button type="button" class="btn btn-ghost" onclick="back()">上一步</button>
+  <button type="button" class="btn btn-primary" id="nextBtn" onclick="next()"></button>
+</div>
+
+<script>
+const STEPS = ['認識您的健康', '規劃專屬方案', '了解檢前準備', '安排檢查當天'];
+
+// step: index into STEPS; -1 = login interstitial (doesn't occupy a step); -2 = complete
+// ?eval=0 drops the 檢查前評估 page
+const hasEval = new URLSearchParams(location.search).get('eval') !== '0';
+const PAGES = [
+  { step: 0, title: '填寫基本資料', sub: '性別與年齡會影響檢查項目，請留下真實資料' },
+  { step: 0, title: '個人病史', sub: '曾經發生過的健康狀況，作為檢查項目參考' },
+  { step: 0, title: '家族病史', sub: '提供重要的家族健康背景，協助掌握健康脈絡' },
+  { step: 0, title: '個人身體狀況', sub: '了解您目前的狀態，幫助篩選適合的檢查項目' },
+  { step: 0, title: '生活習慣', sub: '您的日常習慣，也會影響需要關注的檢查' },
+  { step: 1, title: '正在為您規劃專屬方案', sub: '約需 5 秒', loading: true },
+  { step: 1, title: '選擇健檢方案', sub: '照您的身體狀況，為您排出專屬方案' },
+  { step: 1, title: '添加檢查項目', sub: '依您的狀況，還可以考慮這些檢查' },
+  { step: 1, title: '確認方案及檢查項目', sub: '確認方案與加選項目' },
+  hasEval && { step: 2, title: '檢查前評估', sub: '請勾選您目前有的症狀或情況' },
+  { step: 2, title: '檢查提醒', sub: '請詳閱以下檢查注意事項' },
+  { step: -1, title: '登入或註冊', sub: '登入或註冊後，接著安排檢查當天', cta: '登入' },
+  { step: 3, title: '檢查相關資料', sub: '請填寫有人可簽收的地址，避免退件' },
+  { step: 3, title: '選擇預約時間', sub: '請選擇健檢日期與報到時段' },
+  { step: 3, title: '檢查預約資料', sub: '確認所有資料後完成預約', cta: '確認預約' },
+  { step: -2, title: '預約完成', sub: '我們已收到您的預約，健檢前會再提醒您', complete: true }
+].filter(Boolean);
+
+let idx = 0;
+let timer = null;
+
+function dotsHtml(pos, total) {
+  let html = '';
+  for (let k = 1; k <= total; k++) html += `<div class="dot${k <= pos ? ' on' : ''}"></div>`;
+  return html;
+}
+
+function render() {
+  const pg = PAGES[idx];
+  const cur = pg.step;
+
+  // Dots: only on the current step, one per real page (loading doesn't count), hidden when the step has 1 page
+  const inStep = PAGES.filter(p => p.step === cur && cur >= 0 && !p.loading);
+  const total = inStep.length;
+  const pos = pg.loading ? 0 : inStep.indexOf(pg) + 1;
+  const showDots = cur >= 0 && total > 1;
+  const dotsLabel = pos > 0 ? `第 ${pos} 頁，共 ${total} 頁` : `共 ${total} 頁`;
+
+  document.getElementById('stepper').hidden = !!pg.complete;
+  document.getElementById('steps').innerHTML = STEPS.map((label, i) => {
+    const current = i === cur;
+    const chevron = i < STEPS.length - 1
+      ? '<svg width="16" height="22" viewBox="0 0 16 22" fill="none" aria-hidden="true"><path d="M6 6l5 5-5 5" stroke="#adadad" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '';
+    const dots = current && showDots
+      ? `<div class="dots" role="img" aria-label="${dotsLabel}">${dotsHtml(pos, total)}</div>`
+      : '';
+    return `<li class="step${current ? ' current' : ''}"${current ? ' aria-current="step"' : ''}>
+      <div class="step-body"><span class="step-label">${label}</span>${dots}</div>${chevron}
+    </li>`;
+  }).join('');
+
+  const mName = document.getElementById('stepperMName');
+  const mDots = document.getElementById('stepperMDots');
+  document.getElementById('stepperM').hidden = !!pg.complete;
+  mName.textContent = cur === -1 ? '登入後，接著安排檢查當天' : (cur >= 0 ? STEPS[cur] : '');
+  mName.classList.toggle('login', cur === -1);
+  mDots.hidden = !showDots;
+  mDots.setAttribute('aria-label', dotsLabel);
+  mDots.innerHTML = showDots ? dotsHtml(pos, total) : '';
+
+  document.getElementById('pageTitle').textContent = pg.title;
+  document.getElementById('pageSub').textContent = pg.sub;
+  document.getElementById('pageCard').innerHTML = pg.loading
+    ? '<div class="loading"><div class="spinner" aria-hidden="true"></div><div>正在依您的健康資料排出方案…</div></div>'
+    : `［頁面內容：${pg.title}］`;
+
+  document.getElementById('actions').hidden = !!(pg.loading || pg.complete);
+  document.getElementById('nextBtn').textContent = pg.cta || '下一步';
+}
+
+function go(i) {
+  idx = Math.max(0, Math.min(i, PAGES.length - 1));
+  clearTimeout(timer);
+  if (PAGES[idx].loading) timer = setTimeout(() => go(idx + 1), 1500);
+  render();
+}
+
+function next() { go(idx + 1); }
+
+function back() {
+  let t = idx - 1;
+  if (t >= 0 && PAGES[t].loading) t--;
+  go(t);
+}
+
+go(0);
+</script>
+</body>
+</html>
