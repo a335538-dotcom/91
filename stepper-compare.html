@@ -19,8 +19,12 @@
   --txt3: #6b6b6b;
   --txt4: #474847;
   --muted: #575757;
+  --hint: #737373;
   --line: #dbdbdb;
-  --chevron: #adadad;
+  --field-line: #ebebeb;
+  --control: #adadad;
+  --placeholder: #adadad;
+  --required: #eb3d37;
   --bar: #191a19;
   --shadow: 0 4px 20px rgba(0,151,119,0.15);
   --body: 'Noto Sans TC', system-ui, sans-serif;
@@ -100,7 +104,7 @@ button:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px
 .e-step { display: flex; align-items: flex-start; gap: 20px; }
 .e-step-body { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .label { font-size: 15px; color: var(--txt3); }
-.current > .label, .current .label { font-weight: 700; color: var(--ink); }
+.current .label { font-weight: 700; color: var(--ink); }
 .dots { display: flex; gap: 6px; }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
 .dot.on { background: var(--brand); }
@@ -112,6 +116,7 @@ button:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px
 
 /* ── G-2 RAIL ── */
 .body-row { flex: 1 1 auto; min-height: 0; display: flex; }
+.mobile .body-row { overflow-y: auto; }
 .rail { width: 264px; flex: 0 0 auto; padding: 24px 0 0 40px; }
 .rail-spacer { width: 264px; flex: 0 0 auto; }
 .rail-list { list-style: none; display: flex; flex-direction: column; }
@@ -158,30 +163,32 @@ button:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 24px;
+  padding: 24px 0 40px;
   gap: 4px;
-  text-align: center;
 }
-.page-title { font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: 0.4px; }
-.page-sub { font-size: 16px; color: var(--txt2); }
+.page-title { font-size: 24px; font-weight: 700; color: var(--txt); letter-spacing: 0.4px; text-align: center; }
+.page-sub { font-size: 18px; color: var(--txt2); text-align: center; }
 .page-card {
   width: 800px;
-  height: 360px;
+  max-width: 100%;
   margin-top: 20px;
   background: var(--card);
   border-radius: 32px;
   box-shadow: var(--shadow);
+}
+.page-card.placeholder {
+  height: 360px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 32px;
   font-size: 15px;
-  color: #737373;
+  color: var(--hint);
 }
-.mobile .page { padding: 16px 16px 0; gap: 6px; }
+.mobile .page { padding: 16px 16px 24px; gap: 6px; }
 .mobile .page-title { font-size: 20px; letter-spacing: 0; }
 .mobile .page-sub { font-size: 15px; }
-.mobile .page-card { width: 100%; border-radius: 24px; padding: 24px; font-size: 14px; }
+.mobile .page-card { width: 100%; border-radius: 24px; }
 
 .loading { display: flex; flex-direction: column; align-items: center; gap: 16px; color: var(--muted); }
 .spinner {
@@ -193,8 +200,93 @@ button:focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── FORM CARD ── */
+.form { padding: 32px 0; display: flex; flex-direction: column; gap: 16px; }
+.section-head { position: relative; padding: 0 60px 0 56px; display: flex; flex-direction: column; gap: 2px; }
+.section-head::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  width: 4px; height: 40px;
+  margin-top: -20px;
+  background: var(--brand);
+}
+.eyebrow { font-size: 14px; font-weight: 500; color: var(--brand-txt); }
+.section-title { font-size: 18px; font-weight: 700; color: var(--txt); letter-spacing: 0.4px; line-height: 1.3; }
+.req { color: var(--required); font-size: 14px; font-weight: 500; margin-left: 4px; }
+.section-desc { font-size: 14px; color: var(--hint); line-height: 1.4; }
+
+.options { padding: 0 56px; display: flex; flex-direction: column; gap: 32px; }
+.none-row { padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group-label { font-size: 16px; font-weight: 500; color: var(--txt); }
+.choices { display: flex; flex-wrap: wrap; gap: 16px 24px; padding: 8px 0; }
+
+.opt { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; font-size: 14px; color: var(--txt); cursor: pointer; }
+.opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.box {
+  width: 24px; height: 24px;
+  flex: 0 0 auto;
+  border: 1px solid var(--control);
+  border-radius: 8px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radio .box { border-radius: 50%; }
+.opt input:checked + .box { background: var(--brand); border-color: var(--brand); }
+.opt input:checked + .box::after {
+  content: '';
+  width: 10px; height: 6px;
+  border-left: 2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+.radio input:checked + .box { background: var(--card); }
+.radio input:checked + .box::after { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--brand); transform: none; }
+.opt input:focus-visible + .box { outline: 2px solid var(--brand-dark); outline-offset: 2px; }
+
+/* personal info form */
+.info { padding: 24px 60px 8px; display: flex; flex-direction: column; gap: 32px; }
+.field { display: flex; flex-direction: column; gap: 4px; border: 0; min-width: 0; }
+.field > legend { margin-bottom: 4px; }
+.group > legend { margin-bottom: 8px; }
+.field-label { font-size: 14px; font-weight: 500; color: var(--muted); line-height: 24px; }
+.field-q { font-size: 15px; font-weight: 500; color: var(--ink); line-height: 24px; }
+.birth { display: flex; align-items: center; gap: 16px; max-width: 438px; }
+.birth-input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--field-line);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 14px;
+}
+.birth-input:focus-within { border-color: var(--brand); }
+.birth-input input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; font: inherit; color: var(--txt); background: none; }
+.birth-input input::placeholder { color: var(--placeholder); }
+.age { font-size: 14px; color: var(--brand-txt); white-space: nowrap; padding: 0 8px; }
+.info .choices { gap: 12px 20px; }
+.info .opt { font-size: 15px; color: var(--ink); }
+
+.mobile .form { padding: 24px 0; }
+.mobile .section-head { padding: 0 20px 0 20px; }
+.mobile .section-title { font-size: 17px; }
+.mobile .options { padding: 0 20px; gap: 24px; }
+.mobile .group-label { font-size: 15px; }
+.mobile .choices { gap: 14px 20px; }
+.mobile .info { padding: 16px 20px 8px; gap: 24px; }
+.mobile .birth { gap: 8px; }
+.mobile .age { padding: 0 2px; }
+
 /* ── ACTIONS ── */
-.actions { flex: 0 0 auto; background: var(--card); padding: 16px; display: flex; justify-content: center; gap: 12px; }
+.actions { flex: 0 0 auto; position: sticky; bottom: 0; background: var(--card); padding: 16px; display: flex; justify-content: center; gap: 12px; z-index: 3; }
 .btn { width: 360px; height: 48px; border-radius: 24px; font-size: 16px; font-weight: 500; }
 .btn-ghost { border: 1px solid var(--brand); background: var(--card); color: var(--brand-txt); }
 .btn-primary { border: 0; background: var(--brand); color: #ffffff; }
@@ -229,14 +321,58 @@ const PIN = size => `<svg width="${size}" height="${size}" viewBox="0 0 16 16" f
 const CHEVRON_RIGHT = '<svg width="16" height="22" viewBox="0 0 16 22" fill="none" aria-hidden="true"><path d="M6 6l5 5-5 5" stroke="#adadad" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHEVRON_DOWN = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="#474847" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+// Real copy for the 認識您的健康 pages (Figma: 03_基本資料-體況, Section 3)
+const FORMS = {
+  history: {
+    eyebrow: '健康背景 (1/4)', title: '是否有以下個人病史？', none: '我沒有以下病史',
+    groups: [
+      ['慢性三高疾病', ['高血壓', '糖尿病', '高血脂', '癲癇', '中風']],
+      ['眼科與耳鼻喉相關疾病', ['白內障', '青光眼', '黃斑部病變', '高度近視 (任一眼超過500度)', '聽力障礙']],
+      ['心肺相關疾病', ['心臟病', '氣喘', '慢性氣管炎', '肺氣腫', '肺結核']],
+      ['肝膽腸胃相關疾病', ['肝病', 'B、C 型肝炎', '脂肪肝', '逆流性食道炎', '胃潰瘍', '十二指腸潰瘍', '胃炎']],
+      ['婦科與乳房相關疾病', ['乳房纖維腺瘤 / 囊腫', '卵巢囊腫', '子宮肌瘤']],
+      ['其他相關疾病', ['慢性過敏', '貧血', '甲狀腺疾病']]
+    ]
+  },
+  family: {
+    eyebrow: '健康背景 (2/4)', title: '您的家族成員(包含祖父母、父母、兄弟姊妹或子女) 是否有以下疾病？', none: '我沒有以下病史',
+    groups: [
+      ['癌症家族史', ['乳癌', '肺癌', '胰臟癌', '大腸癌', '胃癌', '卵巢 / 子宮癌', '攝護腺癌', '肝癌', '鼻咽癌', '甲狀腺癌']],
+      ['慢性三高、心腦血管相關疾病', ['高血壓、糖尿病、高血脂', '心血管疾病', '腦血管疾病']],
+      ['免疫與血液疾病', ['自體免疫疾病（如：紅斑性狼瘡 / 類風濕關節炎）', '貧血', '白血病']],
+      ['肝膽腸胃相關疾病', ['慢性肝炎或肝硬化', '腎臟疾病']],
+      ['其他相關疾病', ['甲狀腺疾病', '失智症']]
+    ]
+  },
+  symptoms: {
+    eyebrow: '健康背景 (3/4)', title: '最近三個月是否有以下不舒服症狀？', none: '我沒有以下病史',
+    groups: [
+      ['耳鼻喉症狀', ['耳鳴', '聽力減退', '久治不癒的咳嗽']],
+      ['胸部症狀', ['心悸', '不定時胸悶']],
+      ['上消化道症狀', ['噁心', '胃灼熱', '吞嚥困難']],
+      ['下消化道症狀', ['慢性腹瀉', '慢性便祕', '血便（鮮紅色）', '黑便', '排便習慣改變']],
+      ['四肢與軀幹肌肉骨骼症狀', ['手腳肌肉無力', '手麻痛', '腳麻痛']],
+      ['特殊症狀', ['體重無故減輕 ≥ 3公斤', '多尿 / 頻尿']]
+    ]
+  },
+  lifestyle: {
+    eyebrow: '健康背景 (4/4)', title: '哪些比較像您平常的生活？', desc: '依您自己的感覺就好，可參考一週三次以上', none: '皆不符合',
+    groups: [
+      ['關於我的飲食', ['吃全素 (純植物性)', '愛吃甜食或手搖', '愛吃炸物或高油食物', '愛吃重鹹或醃製物', '很少吃蔬菜水果', '不太喝白開水', '常吃宵夜']],
+      ['關於我的作息與運動', ['常熬夜或睡眠不夠', '幾乎沒運動', '長時間久坐']],
+      ['我現在或以前有', ['抽菸', '嗜酒', '嚼檳榔']]
+    ]
+  }
+};
+
 // step: index into STEPS; -1 = login interstitial (doesn't occupy a step); -2 = complete
 function buildPages(hasEval) {
   return [
-    { step: 0, title: '填寫基本資料', sub: '性別與年齡會影響檢查項目，請留下真實資料' },
-    { step: 0, title: '個人病史', sub: '曾經發生過的健康狀況，作為檢查項目參考' },
-    { step: 0, title: '家族病史', sub: '提供重要的家族健康背景，協助掌握健康脈絡' },
-    { step: 0, title: '個人身體狀況', sub: '了解您目前的狀態，幫助篩選適合的檢查項目' },
-    { step: 0, title: '生活習慣', sub: '您的日常習慣，也會影響需要關注的檢查' },
+    { step: 0, title: '懂您的與眾不同，更懂守護您的健康', sub: '先讓我們填寫基本健康資訊，幫助我們提供合適的檢查資訊', form: 'info' },
+    { step: 0, title: '個人病史', sub: '曾經發生過的健康狀況，作為檢查項目參考', form: 'history' },
+    { step: 0, title: '家族病史', sub: '提供重要的家族健康背景，協助掌握健康脈絡', form: 'family' },
+    { step: 0, title: '個人身體狀況', sub: '了解您的目前狀態，幫助篩選適合您的檢查項目資訊', form: 'symptoms' },
+    { step: 0, title: '生活習慣', sub: '依照您平常的作息與飲食，我們會找出適合的檢查項目', form: 'lifestyle' },
     { step: 1, title: '正在為您規劃專屬方案', sub: '約需 5 秒', loading: true },
     { step: 1, title: '選擇健檢方案', sub: '照您的身體狀況，為您排出專屬方案' },
     { step: 1, title: '添加檢查項目', sub: '依您的狀況，還可以考慮這些檢查' },
@@ -251,7 +387,7 @@ function buildPages(hasEval) {
   ].filter(Boolean);
 }
 
-const state = { idx: 1, style: 'E', mobile: false, hasEval: true, sheet: false };
+const state = { idx: 1, style: 'E', mobile: false, hasEval: true, sheet: false, answers: {} };
 let pages = buildPages(true);
 let timer = null;
 
@@ -259,6 +395,59 @@ function dotsHtml(pos, total, label) {
   let html = '';
   for (let k = 1; k <= total; k++) html += `<div class="dot${k <= pos ? ' on' : ''}"></div>`;
   return `<div class="dots" role="img" aria-label="${label}">${html}</div>`;
+}
+
+function optHtml(type, name, value) {
+  const a = state.answers[name];
+  const checked = type === 'radio' ? a === value : (a || []).includes(value);
+  return `<label class="opt${type === 'radio' ? ' radio' : ''}">
+    <input type="${type}" name="${name}" value="${value}"${checked ? ' checked' : ''}><span class="box" aria-hidden="true"></span>${value}
+  </label>`;
+}
+
+function sectionHead(eyebrow, title, desc) {
+  return `<div class="section-head">
+    ${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}
+    <h2 class="section-title">${title}<span class="req" aria-hidden="true">*</span></h2>
+    ${desc ? `<p class="section-desc">${desc}</p>` : ''}
+  </div>`;
+}
+
+function ageText() {
+  const y = parseInt(state.answers.birthY, 10);
+  if (!y || y < 1900 || y > new Date().getFullYear()) return '目前 -- 歲';
+  return `目前 ${new Date().getFullYear() - y} 歲`;
+}
+
+function infoFormHtml() {
+  const a = state.answers;
+  const radios = (name, opts) => `<div class="choices">${opts.map(o => optHtml('radio', name, o)).join('')}</div>`;
+  const birth = (key, ph, unit, label) => `<label class="birth-input"><input inputmode="numeric" name="${key}" value="${a[key] || ''}" placeholder="${ph}" aria-label="${label}">${unit}</label>`;
+  return `<div class="form">
+    ${sectionHead('', '填寫真實資料', '性別與年齡會影響檢查項目，也會成為您的健檢紀錄，請留下真實資料')}
+    <div class="info">
+      <fieldset class="field"><legend class="field-label">生理性別</legend>${radios('sex', ['男性', '女性'])}</fieldset>
+      <fieldset class="field"><legend class="field-label">生日</legend>
+        <div class="birth">${birth('birthY', '西元', '年', '出生年（西元）')}${birth('birthM', '01', '月', '出生月')}${birth('birthD', '01', '日', '出生日')}<span class="age" id="age">${ageText()}</span></div>
+      </fieldset>
+      <fieldset class="field"><legend class="field-q">您目前是否為以下狀態？</legend>${radios('pregnant', ['懷孕中、疑似或準備懷孕', '產後哺乳中', '以上皆無'])}</fieldset>
+      <fieldset class="field"><legend class="field-q">您是否已停經超過一年？</legend>${radios('menopause', ['是', '否'])}</fieldset>
+    </div>
+  </div>`;
+}
+
+function checkFormHtml(key) {
+  const f = FORMS[key];
+  return `<div class="form">
+    ${sectionHead(f.eyebrow, f.title, f.desc)}
+    <div class="options">
+      <div class="none-row">${optHtml('checkbox', key, f.none)}</div>
+      ${f.groups.map(([label, opts]) => `
+        <fieldset class="group field"><legend class="group-label">${label}</legend>
+          <div class="choices">${opts.map(o => optHtml('checkbox', key, o)).join('')}</div>
+        </fieldset>`).join('')}
+    </div>
+  </div>`;
 }
 
 function render() {
@@ -314,17 +503,21 @@ function render() {
     </div>`;
   }
 
+  let card;
+  if (pg.form === 'info') card = `<div class="page-card">${infoFormHtml()}</div>`;
+  else if (pg.form) card = `<div class="page-card">${checkFormHtml(pg.form)}</div>`;
+  else if (pg.loading) card = '<div class="page-card placeholder"><div class="loading"><div class="spinner" aria-hidden="true"></div><div>正在依您的健康資料排出方案…</div></div></div>';
+  else card = `<div class="page-card placeholder">［頁面內容：${pg.title}］</div>`;
+
   const pageHtml = `
     <main class="page">
       <h1 class="page-title">${pg.title}</h1>
       <p class="page-sub">${pg.sub}</p>
-      <div class="page-card">${pg.loading
-        ? '<div class="loading"><div class="spinner" aria-hidden="true"></div><div>正在依您的健康資料排出方案…</div></div>'
-        : `［頁面內容：${pg.title}］`}</div>
+      ${card}
     </main>`;
 
   const rail = showStepper && !isE && !m;
-  const body = `<div class="body-row">
+  const body = `<div class="body-row" id="bodyRow">
       ${rail ? `<nav class="rail" aria-label="預約進度"><ol class="rail-list">${railItems}</ol></nav>` : ''}
       ${pageHtml}
       ${rail ? '<div class="rail-spacer"></div>' : ''}
@@ -353,6 +546,9 @@ function go(i) {
   clearTimeout(timer);
   if (pages[state.idx].loading) timer = setTimeout(() => go(state.idx + 1), 1500);
   render();
+  window.scrollTo(0, 0);
+  const row = document.getElementById('bodyRow');
+  if (row) row.scrollTop = 0;
 }
 
 function next() { go(state.idx + 1); }
@@ -367,6 +563,28 @@ function toggleSheet() {
   state.sheet = !state.sheet;
   render();
 }
+
+// Answers are kept across page changes; the "none" option is exclusive within its question
+document.getElementById('stage').addEventListener('change', e => {
+  const t = e.target;
+  if (t.type === 'radio') { state.answers[t.name] = t.value; return; }
+  if (t.type !== 'checkbox') return;
+  const f = FORMS[t.name];
+  let list = state.answers[t.name] || [];
+  if (!t.checked) list = list.filter(v => v !== t.value);
+  else if (t.value === f.none) list = [t.value];
+  else list = list.filter(v => v !== f.none).concat(t.value);
+  state.answers[t.name] = list;
+  document.querySelectorAll(`input[name="${t.name}"]`).forEach(i => { i.checked = list.includes(i.value); });
+});
+document.getElementById('stage').addEventListener('input', e => {
+  const t = e.target;
+  if (!t.name || !t.name.startsWith('birth')) return;
+  state.answers[t.name] = t.value.replace(/\D/g, '');
+  t.value = state.answers[t.name];
+  const age = document.getElementById('age');
+  if (age) age.textContent = ageText();
+});
 
 document.getElementById('tStyle').addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
